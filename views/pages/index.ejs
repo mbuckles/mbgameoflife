@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <% include ../partials/header.ejs %>
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="center-block" id="render-target"></div>
+  </div>
+ <footer>
+   <% include ../partials/footer.ejs %>
+   <script>
+   'use strict';
+
+   console.clear();
+
+   var size = [40, 56];
+
+   var Main = React.createClass({
+     displayName: 'Main',
+     getInitialState: function getInitialState() {
+       var layout = [];
+       for (var i = 0; i < size[0]; i++) {
+         var row = [];
+         for (var j = 0; j < size[1]; j++) {
+           row.push(Math.random() < .5);
+         }layout.push(row);
+       }
+       return { turn: layout, speed: 100, generations: 0 };
+     },
+     activeCells: function activeCells(x, y) {
+       var count = 0;
+       var advanceCell = this.state.turn[x][y];
+       for (var i = -1; i <= 1; i++) {
+         for (var j = -1; j <= 1; j++) {
+           if (x + i >= 0 && x + i < size[0] && y + j >= 0 && y + j < size[1] && !(i == 0 && j == 0)) if (this.state.turn[x + i][y + j]) count++;
+         }
+       }return count === 3 || advanceCell && count === 2;
+     },
+     newLife: function newLife() {
+       var arr = [];
+       for (var i = 0; i < size[0]; i++) {
+         arr.push([]);
+         for (var j = 0; j < size[1]; j++) {
+           arr[i].push(this.activeCells(i, j));
+         }
+       }
+
+       return arr;
+     },
+     setSpeed: function setSpeed(s) {
+       var cellSpeed = this;
+       return function () {
+         return cellSpeed.setState({ speed: s });
+       };
+     },
+     reset: function reset() {
+       var layout = [];
+       for (var i = 0; i < size[0]; i++) {
+         var row = [];
+         for (var j = 0; j < size[1]; j++) {
+           row.push(false);
+         }layout.push(row);
+       }
+
+       this.setState({ turn: layout, generations: 0 });
+     },
+     setInterval: function setInterval() {
+       if (this.interval) clearInterval();
+       var newTime = this;
+
+       var timeout = function timeout() {
+         newTime.interval = setTimeout(timeout, newTime.state.speed);
+         newTime.setState({ turn: newTime.newLife(), generations: newTime.state.generations + 1 });
+       };
+       this.interval = setTimeout(timeout, this.state.speed);
+     },
+     clearInterval: function clearInterval() {
+       clearTimeout(this.interval);
+       this.interval = false;
+     },
+     componentDidMount: function componentDidMount() {
+       this.setInterval();
+     },
+     componentWillUnmount: function componentWillUnmount() {
+       this.clearInterval();
+     },
+     toggleCell: function toggleCell(i, j) {
+       var layout = this;
+       return function () {
+         var temp = [];
+         for (var k = 0; k < size[0]; k++) {
+           temp.push(layout.state.turn[k].slice(0));
+         }temp[i][j] = !temp[i][j];
+         layout.setState({ turn: temp });
+       };
+     },
+     render: function render() {
+       var _this = this;
+
+       return React.createElement(
+         'div',
+         { className: 'mainBox' },
+         React.createElement(
+           'h1',
+           null,
+           'Game of Life'
+         ),
+         React.createElement(
+           'div',
+           { className: 'game' },
+           this.state.turn.map(function (row, i) {
+             return React.createElement(
+               'div',
+               { className: 'gridCells' },
+               row.map(function (cell, j) {
+                 return React.createElement('div', { onMouseDown: _this.toggleCell(i, j), className: 'cell ' + (_this.state.turn[i][j] ? 'old' : '') });
+               })
+             );
+           })
+         ),
+         React.createElement(
+           'div',
+           { className: 'buttons' },
+           React.createElement(
+             'div',
+             { className: 'btn-group' },
+             React.createElement(
+               'button',
+               { className: 'btn', onClick: this.setSpeed(750) },
+               'Slow'
+             ),
+             React.createElement(
+               'button',
+               { className: 'btn', onClick: this.setSpeed(200) },
+               'Fast'
+             )
+           ),
+           React.createElement(
+             'h3',
+             null,
+             'Generation ',
+             this.state.generations
+           ),
+           React.createElement(
+             'div',
+             { className: 'btn-group' },
+             React.createElement('button', { className: 'btn fa fa-play', onClick: this.setInterval }),
+             React.createElement('button', { className: 'btn fa fa-pause', onClick: this.clearInterval }),
+             React.createElement('button', { className: 'btn fa fa-refresh', onClick: this.reset })
+           )
+         )
+       );
+     }
+   });
+
+   ReactDOM.render(React.createElement(Main, null), document.getElementById('render-target'));
+   </script>
+ </footer>
+</html>
+</body>
